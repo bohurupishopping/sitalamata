@@ -1,54 +1,93 @@
-import React, { useState } from 'react'
-    import Sidebar from '../components/Sidebar'
-    import DataTable from '../components/DataTable'
+import React, { useState, useEffect } from 'react'
+import { collection, addDoc, onSnapshot, query } from 'firebase/firestore'
+import { db } from '../firebase'
+import Sidebar from '../components/Sidebar'
+import SalesTable from '../components/SalesTable'
+import AddSaleModal from '../components/AddSaleModal'
 
-    export default function SalesTracking() {
-      const [sales, setSales] = useState([])
-      const [newSale, setNewSale] = useState({ itemName: '', salesDate: '', quantitySold: 0 })
+export default function SalesTracking() {
+  const [sales, setSales] = useState([])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [inventoryItems, setInventoryItems] = useState([])
 
-      const handleAddSale = () => {
-        setSales([...sales, newSale])
-        setNewSale({ itemName: '', salesDate: '', quantitySold: 0 })
+  // Fetch all sales data
+  useEffect(() => {
+    const q = query(collection(db, 'sales'))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      setSales(salesData)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // Fetch inventory items for sale selection
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const categoriesQuery = query(collection(db, 'categories'))
+        const unsubscribeCategories = onSnapshot(categoriesQuery, (categoriesSnapshot) => {
+          const allItems = []
+
+          categoriesSnapshot.forEach(async (categoryDoc) => {
+            const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
+            const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
+              itemsSnapshot.forEach(itemDoc => {
+                allItems.push({
+                  id: itemDoc.id,
+                  category: categoryDoc.id,
+                  ...itemDoc.data()
+                })
+              })
+              setInventoryItems([...allItems])
+            })
+          })
+        })
+
+        return () => unsubscribeCategories()
+      } catch (error) {
+        console.error('Error fetching inventory:', error)
       }
-
-      return (
-        <div className="min-h-screen bg-gray-100 flex">
-          <Sidebar />
-          <div className="flex-1 p-8">
-            <h1 className="text-2xl font-bold mb-6">Sales Tracking</h1>
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4">Add New Sale</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  placeholder="Item Name"
-                  value={newSale.itemName}
-                  onChange={(e) => setNewSale({ ...newSale, itemName: e.target.value })}
-                  className="p-2 border rounded-md"
-                />
-                <input
-                  type="date"
-                  value={newSale.salesDate}
-                  onChange={(e) => setNewSale({ ...newSale, salesDate: e.target.value })}
-                  className="p-2 border rounded-md"
-                />
-                <input
-                  type="number"
-                  placeholder="Quantity Sold"
-                  value={newSale.quantitySold}
-                  onChange={(e) => setNewSale({ ...newSale, quantitySold: parseInt(e.target.value) })}
-                  className="p-2 border rounded-md"
-                />
-              </div>
-              <button
-                onClick={handleAddSale}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Add Sale
-              </button>
-            </div>
-            <DataTable data={sales} />
-          </div>
-        </div>
-      )
     }
+
+    fetchInventory()
+  }, [])
+
+  // Handle adding a new sale
+  const handleAddSale = async (sale) => {
+    try {
+      await addDoc(collection(db, 'sales'), {
+        ...sale,
+        saleDate: new Date().toISOString().split('T')[0]
+      })
+      setIsAddModalOpen(false)
+    } catch (error) {
+      console.error('Error adding sale:', error)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      <Sidebar />
+      <div className="flex-1 p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Sales Tracking</h1>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Add New Sale
+          </button>
+        </div>
+
+        <SalesTable sales={sales} />
+
+        <AddSaleModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddSale}
+          inventoryItems={inventoryItems}
+        />
+      </div>
+    </div>
+  )
+}
