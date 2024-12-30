@@ -81,9 +81,9 @@ export default function InventoryManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       <Sidebar />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 md:p-6 overflow-x-auto">
         <InventoryHeader 
           categories={categories}
           selectedCategory={selectedCategory}
@@ -91,17 +91,21 @@ export default function InventoryManagement() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        <InventoryStats inventory={inventory} />
+        <div className="mt-4">
+          <InventoryStats inventory={inventory} />
+        </div>
 
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100">
-          <InventoryTable
-            inventory={inventory}
-            onEdit={(item) => {
-              setEditingItem(item)
-              setIsEditModalOpen(true)
-            }}
-            onDelete={handleDeleteItem}
-          />
+        <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto">
+          <div className="p-4">
+            <InventoryTable
+              inventory={inventory}
+              onEdit={(item) => {
+                setEditingItem(item)
+                setIsEditModalOpen(true)
+              }}
+              onDelete={handleDeleteItem}
+            />
+          </div>
         </div>
 
         <AddInventoryModal

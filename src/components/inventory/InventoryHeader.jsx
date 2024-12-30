@@ -2,16 +2,16 @@ import React from 'react'
 
 export default function InventoryHeader({ categories, selectedCategory, setSelectedCategory, onAddClick }) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
-        <p className="text-sm text-gray-500">Track and manage your inventory</p>
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
+      <div className="mb-4 md:mb-0">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Inventory</h1>
+        <p className="text-xs md:text-sm text-gray-500">Track and manage your inventory</p>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
         <select
           value={selectedCategory || ''}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full md:w-48 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
           <option value="">Select Category</option>
           {categories.map((category) => (
@@ -22,7 +22,7 @@ export default function InventoryHeader({ categories, selectedCategory, setSelec
         </select>
         <button
           onClick={onAddClick}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
