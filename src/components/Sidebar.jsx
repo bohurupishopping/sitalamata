@@ -50,83 +50,18 @@ export default function Sidebar() {
   ]
 
   return (
-    <div
-      className={`bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 ${
+    <>
+      {/* Desktop Sidebar */}
+      <div className={`hidden md:block bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 ${
         isSidebarOpen ? 'w-54' : 'w-20'
-      }`}
-    >
-      {/* Header Section */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-r from-violet-500 to-pink-500 p-2 rounded-lg shadow-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </div>
-          <h1 className={`text-xl font-bold text-gray-800 ${!isSidebarOpen && 'hidden'}`}>
-            Sitalamata
-          </h1>
-        </div>
-      </div>
-
-      {/* Navigation Section */}
-      <nav className="p-3">
-        <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.name}>
-              <a
-                href={item.path}
-                className={`flex items-center p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200 group ${
-                  location.pathname === item.path ? 'bg-gradient-to-r from-violet-500/10 to-pink-500/10' : ''
-                }`}
-              >
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${item.color} text-white shadow-sm`}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={item.icon}
-                    />
-                  </svg>
-                </div>
-                <span className={`ml-3 text-sm group-hover:text-gray-900 ${
-                  !isSidebarOpen && 'hidden'
-                } ${location.pathname === item.path ? 'font-medium text-gray-900' : ''}`}>
-                  {item.name}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Collapse Button */}
-        <div className="mt-3">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="w-full flex items-center p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
-          >
-            <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+      }`}>
+        {/* Header Section */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="bg-gradient-to-r from-violet-500 to-pink-500 p-2 rounded-lg shadow-sm">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-6 w-6 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -135,34 +70,131 @@ export default function Sidebar() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d={isSidebarOpen ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7M19 19l-7-7 7-7"}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
             </div>
-            <span className={`ml-3 text-sm ${!isSidebarOpen && 'hidden'}`}>
-              {isSidebarOpen ? 'Collapse' : 'Expand'}
-            </span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Profile Section */}
-      <div className="absolute bottom-0 w-full p-3 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-pink-500 rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-white">U</span>
+            <h1 className={`text-xl font-bold text-gray-800 ${!isSidebarOpen && 'hidden'}`}>
+              Sitalamata
+            </h1>
           </div>
-          <div className={`ml-3 ${!isSidebarOpen && 'hidden'}`}>
-            <p className="text-sm font-medium text-gray-800">Admin</p>
+        </div>
+
+        {/* Navigation Section */}
+        <nav className="p-3">
+          <ul className="space-y-1">
+            {navItems.map((item) => (
+              <li key={item.name}>
+                <a
+                  href={item.path}
+                  className={`flex items-center p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200 group ${
+                    location.pathname === item.path ? 'bg-gradient-to-r from-violet-500/10 to-pink-500/10' : ''
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg bg-gradient-to-br ${item.color} text-white shadow-sm`}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={item.icon}
+                      />
+                    </svg>
+                  </div>
+                  <span className={`ml-3 text-sm group-hover:text-gray-900 ${
+                    !isSidebarOpen && 'hidden'
+                  } ${location.pathname === item.path ? 'font-medium text-gray-900' : ''}`}>
+                    {item.name}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          {/* Collapse Button */}
+          <div className="mt-3">
             <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-900"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="w-full flex items-center p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
             >
-              Logout
+              <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={isSidebarOpen ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7M19 19l-7-7 7-7"}
+                  />
+                </svg>
+              </div>
+              <span className={`ml-3 text-sm ${!isSidebarOpen && 'hidden'}`}>
+                {isSidebarOpen ? 'Collapse' : 'Expand'}
+              </span>
             </button>
+          </div>
+        </nav>
+
+        {/* Profile Section */}
+        <div className="absolute bottom-0 w-full p-3 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-pink-500 rounded-full flex items-center justify-center shadow-sm">
+              <span className="text-white">U</span>
+            </div>
+            <div className={`ml-3 ${!isSidebarOpen && 'hidden'}`}>
+              <p className="text-sm font-medium text-gray-800">Admin</p>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-gray-500 hover:text-gray-900"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+        <div className="flex justify-around p-2">
+          {navItems.map((item) => (
+            <a
+              key={item.name}
+              href={item.path}
+              className="flex flex-col items-center p-2 text-gray-600 hover:text-gray-900"
+            >
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${item.color} text-white shadow-sm`}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={item.icon}
+                  />
+                </svg>
+              </div>
+              <span className="text-xs mt-1">{item.name}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </>
   )
 }
