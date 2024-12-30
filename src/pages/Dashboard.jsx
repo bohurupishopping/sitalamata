@@ -1,38 +1,79 @@
-import React from 'react'
-    import Sidebar from '../components/Sidebar'
-    import ChartComponent from '../components/ChartComponent'
+import React, { useState, useEffect } from 'react'
+import { collection, query, getDocs } from 'firebase/firestore'
+import { db } from '../firebase'
+import Sidebar from '../components/Sidebar'
+import DashboardSummary from '../components/dashboard/DashboardSummary'
+import SalesTrendChart from '../components/dashboard/SalesTrendChart'
+import InventoryOverview from '../components/dashboard/InventoryOverview'
 
-    export default function Dashboard() {
-      const inventoryData = {
-        totalItems: 1234,
-        availableStock: 1000,
-        salesData: 234
+export default function Dashboard() {
+  const [salesData, setSalesData] = useState([])
+  const [inventoryData, setInventoryData] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch sales data
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      const q = query(collection(db, 'sales'))
+      const querySnapshot = await getDocs(q)
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      setSalesData(data)
+    }
+    fetchSalesData()
+  }, [])
+
+  // Fetch inventory data
+  useEffect(() => {
+    const fetchInventoryData = async () => {
+      const categoriesQuery = query(collection(db, 'categories'))
+      const categoriesSnapshot = await getDocs(categoriesQuery)
+      const allItems = []
+
+      for (const categoryDoc of categoriesSnapshot.docs) {
+        const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
+        const itemsSnapshot = await getDocs(itemsQuery)
+        itemsSnapshot.forEach(itemDoc => {
+          allItems.push({
+            id: itemDoc.id,
+            categoryId: categoryDoc.id,
+            ...itemDoc.data()
+          })
+        })
       }
+      setInventoryData(allItems)
+      setLoading(false)
+    }
+    fetchInventoryData()
+  }, [])
 
-      return (
-        <div className="min-h-screen bg-gray-100 flex">
-          <Sidebar />
-          <div className="flex-1 p-8">
-            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Total Items</h2>
-                <p className="text-3xl font-bold">{inventoryData.totalItems}</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Available Stock</h2>
-                <p className="text-3xl font-bold">{inventoryData.availableStock}</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Sales Data</h2>
-                <p className="text-3xl font-bold">{inventoryData.salesData}</p>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold mb-4">Daily/Weekly Trends</h2>
-              <ChartComponent />
-            </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      <Sidebar />
+      <div className="flex-1 p-6">
+        <h1 className="text-xl font-bold mb-4">Dashboard Overview</h1>
+        
+        <DashboardSummary 
+          salesData={salesData}
+          inventoryData={inventoryData}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <div className="h-72">
+            <SalesTrendChart salesData={salesData} />
+          </div>
+          <div className="h-72">
+            <InventoryOverview inventoryData={inventoryData} />
           </div>
         </div>
-      )
-    }
+      </div>
+    </div>
+  )
+}

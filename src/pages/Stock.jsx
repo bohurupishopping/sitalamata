@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { collection, onSnapshot, query } from 'firebase/firestore'
+import { collection, onSnapshot, query, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import Sidebar from '../components/Sidebar'
+import StockHeader from '../components/stock/StockHeader'
+import StockStats from '../components/stock/StockStats'
+import StockTable from '../components/stock/StockTable'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 
@@ -32,30 +35,23 @@ export default function Stock() {
   // Fetch inventory items from all categories
   useEffect(() => {
     const fetchInventory = async () => {
-      try {
-        const categoriesQuery = query(collection(db, 'categories'))
-        const unsubscribeCategories = onSnapshot(categoriesQuery, (categoriesSnapshot) => {
-          const allItems = []
+      const categoriesQuery = query(collection(db, 'categories'))
+      const categoriesSnapshot = await getDocs(categoriesQuery)
+      const allItems = []
 
-          categoriesSnapshot.forEach(async (categoryDoc) => {
-            const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
-            const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
-              itemsSnapshot.forEach(itemDoc => {
-                allItems.push({
-                  id: itemDoc.id,
-                  categoryId: categoryDoc.id,
-                  ...itemDoc.data()
-                })
-              })
-              setInventoryItems([...allItems])
+      categoriesSnapshot.forEach(async (categoryDoc) => {
+        const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
+        const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
+          itemsSnapshot.forEach(itemDoc => {
+            allItems.push({
+              id: itemDoc.id,
+              categoryId: categoryDoc.id,
+              ...itemDoc.data()
             })
           })
+          setInventoryItems([...allItems])
         })
-
-        return () => unsubscribeCategories()
-      } catch (error) {
-        console.error('Error fetching inventory:', error)
-      }
+      })
     }
 
     fetchInventory()
@@ -112,99 +108,102 @@ export default function Stock() {
 
   const exportToPDF = () => {
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     })
 
-    // Add title and date
+    // Add title
     doc.setFontSize(18)
-    doc.text('Stock Overview Report', 15, 15)
-    doc.setFontSize(12)
-    doc.text(`Date: ${currentDate}`, 15, 22)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Stock Overview Report', 15, 20)
 
-    // Prepare table data
+    // Add subtitle
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Generated on: ${currentDate}`, 15, 28)
+
+    // Add summary section
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Summary', 15, 40)
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Total Items: ${closingStock.length}`, 15, 48)
+    doc.text(`Total Quantity: ${closingStock.reduce((sum, item) => sum + item.quantity, 0)}`, 15, 56)
+    doc.text(`Low Stock Items: ${closingStock.filter(item => item.quantity > 0 && item.quantity < 10).length}`, 15, 64)
+    doc.text(`Out of Stock Items: ${closingStock.filter(item => item.quantity <= 0).length}`, 15, 72)
+
+    // Add table
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Stock Details', 15, 84)
+
     const tableData = closingStock.map(item => [
       item.category,
       item.name,
-      item.quantity
+      item.quantity,
+      item.quantity <= 0 ? 'Out of Stock' : 
+      item.quantity < 10 ? 'Low Stock' : 'In Stock'
     ])
 
-    // Add table
     doc.autoTable({
-      startY: 30,
-      head: [['Category', 'Item Name', 'Quantity']],
+      startY: 90,
+      head: [['Category', 'Item Name', 'Quantity', 'Status']],
       body: tableData,
       theme: 'striped',
       styles: {
         fontSize: 10,
-        cellPadding: 2
+        cellPadding: 3,
+        overflow: 'linebreak'
       },
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
         fontStyle: 'bold'
-      }
+      },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 40 }
+      },
+      margin: { left: 15 }
     })
+
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(10)
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        200,
+        290,
+        null,
+        null,
+        'right'
+      )
+    }
 
     // Save the PDF
     doc.save(`Stock_Report_${currentDate.replace(/ /g, '_')}.pdf`)
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
-      <div className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Stock Overview</h1>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600">{currentDate}</span>
-            <button
-              onClick={exportToPDF}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Export as PDF
-            </button>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Closing Stock</h2>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2 text-left">Category</th>
-                <th className="p-2 text-left">Item Name</th>
-                <th className="p-2 text-left">Quantity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {closingStock.length > 0 ? (
-                closingStock.map((item, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="p-2">{item.category}</td>
-                    <td className="p-2">{item.name}</td>
-                    <td className="p-2">{item.quantity}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" className="p-2 text-center">No stock data available</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <div className="flex-1 p-6">
+        <StockHeader 
+          currentDate={currentDate}
+          onExport={exportToPDF}
+        />
+
+        <StockStats closingStock={closingStock} />
+
+        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100">
+          <StockTable closingStock={closingStock} />
         </div>
       </div>
     </div>

@@ -52,7 +52,7 @@ export default function Sidebar() {
   return (
     <div
       className={`bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 ${
-        isSidebarOpen ? 'w-64' : 'w-20'
+        isSidebarOpen ? 'w-54' : 'w-20'
       }`}
     >
       {/* Header Section */}
@@ -153,7 +153,7 @@ export default function Sidebar() {
             <span className="text-white">U</span>
           </div>
           <div className={`ml-3 ${!isSidebarOpen && 'hidden'}`}>
-            <p className="text-sm font-medium text-gray-800">User</p>
+            <p className="text-sm font-medium text-gray-800">Admin</p>
             <button
               onClick={handleLogout}
               className="text-sm text-gray-500 hover:text-gray-900"
