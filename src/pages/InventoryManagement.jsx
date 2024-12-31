@@ -16,6 +16,9 @@ export default function InventoryManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch categories
   useEffect(() => {
@@ -40,7 +43,17 @@ export default function InventoryManagement() {
     }
   }, [selectedCategory])
 
-  // Add new item
+  // Pagination and filtering
+  const filteredInventory = inventory.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = filteredInventory.slice(indexOfFirstItem, indexOfLastItem)
+
+  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage)
+
   const handleAddItem = async (item) => {
     try {
       let fileUrl = ''
@@ -61,7 +74,6 @@ export default function InventoryManagement() {
     }
   }
 
-  // Update item
   const handleUpdateItem = async (item) => {
     try {
       await updateDoc(doc(db, `categories/${item.category}/items`, item.id), item)
@@ -71,7 +83,6 @@ export default function InventoryManagement() {
     }
   }
 
-  // Delete item
   const handleDeleteItem = async (itemId) => {
     try {
       await deleteDoc(doc(db, `categories/${selectedCategory}/items`, itemId))
@@ -83,28 +94,54 @@ export default function InventoryManagement() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-6 overflow-x-auto">
+      <div className="flex-1 p-4 md:p-6">
         <InventoryHeader 
           categories={categories}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           onAddClick={() => setIsAddModalOpen(true)}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
 
         <div className="mt-4">
           <InventoryStats inventory={inventory} />
         </div>
 
-        <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto">
-          <div className="p-4">
-            <InventoryTable
-              inventory={inventory}
-              onEdit={(item) => {
-                setEditingItem(item)
-                setIsEditModalOpen(true)
-              }}
-              onDelete={handleDeleteItem}
-            />
+        <div className="mt-4 bg-white rounded-lg shadow-sm">
+          <InventoryTable
+            inventory={currentItems}
+            onEdit={(item) => {
+              setEditingItem(item)
+              setIsEditModalOpen(true)
+            }}
+            onDelete={handleDeleteItem}
+          />
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredInventory.length)} of {filteredInventory.length} entries
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1 text-sm bg-gray-100 rounded-md">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         </div>
 

@@ -1,19 +1,26 @@
 import React from 'react'
 
-export default function InventoryHeader({ categories, selectedCategory, setSelectedCategory, onAddClick }) {
+export default function InventoryHeader({ categories, selectedCategory, setSelectedCategory, onAddClick, searchQuery, setSearchQuery }) {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-      <div className="mb-4 md:mb-0">
+      <div>
         <h1 className="text-xl md:text-2xl font-bold text-gray-800">Inventory</h1>
-        <p className="text-xs md:text-sm text-gray-500">Track and manage your inventory</p>
+        <p className="text-sm text-gray-500">Track and manage your inventory</p>
       </div>
-      <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto mt-4 md:mt-0">
+        <input
+          type="text"
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full md:w-48 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        />
         <select
           value={selectedCategory || ''}
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="w-full md:w-48 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
-          <option value="">Select Category</option>
+          <option value="">All Categories</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}

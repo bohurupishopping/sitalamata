@@ -16,6 +16,9 @@ export default function SalesTracking() {
   const [editingSale, setEditingSale] = useState(null)
   const [inventoryItems, setInventoryItems] = useState([])
   const [dateRange, setDateRange] = useState('week')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch sales data
   useEffect(() => {
@@ -52,6 +55,17 @@ export default function SalesTracking() {
     fetchInventory()
   }, [])
 
+  // Pagination and filtering
+  const filteredSales = sales.filter(sale => 
+    sale.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem)
+
+  const totalPages = Math.ceil(filteredSales.length / itemsPerPage)
+
   const handleAddSale = async (sale) => {
     try {
       await addDoc(collection(db, 'sales'), sale)
@@ -78,24 +92,64 @@ export default function SalesTracking() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       <Sidebar />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 md:p-6">
         <SalesHeader 
           onAddClick={() => setIsAddModalOpen(true)}
           dateRange={dateRange}
           setDateRange={setDateRange}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
 
         <SalesStats sales={sales} dateRange={dateRange} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* Sales Table moved here */}
+        <div className="mt-4 bg-white rounded-lg shadow-sm">
+          <SalesTable 
+            sales={currentSales} 
+            onEdit={(sale) => {
+              setEditingSale(sale)
+              setIsEditModalOpen(true)
+            }}
+            onDelete={handleDeleteSale}
+          />
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredSales.length)} of {filteredSales.length} entries
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1 text-sm bg-gray-100 rounded-md">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <div className="bg-white rounded-lg shadow-sm p-4">
             <SalesChart sales={sales} dateRange={dateRange} />
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-lg shadow-sm p-4">
             <h2 className="text-lg font-semibold mb-4">Top Selling Items</h2>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {sales
                 .reduce((acc, sale) => {
                   const existing = acc.find(item => item.name === sale.itemName)
@@ -109,24 +163,13 @@ export default function SalesTracking() {
                 .sort((a, b) => b.quantity - a.quantity)
                 .slice(0, 5)
                 .map((item, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium">{item.name}</span>
-                    <span className="text-sm text-gray-600">{item.quantity} sold</span>
+                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                    <span className="text-sm">{item.name}</span>
+                    <span className="text-sm font-medium">{item.quantity} sold</span>
                   </div>
                 ))}
             </div>
           </div>
-        </div>
-
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100">
-          <SalesTable 
-            sales={sales} 
-            onEdit={(sale) => {
-              setEditingSale(sale)
-              setIsEditModalOpen(true)
-            }}
-            onDelete={handleDeleteSale}
-          />
         </div>
 
         <AddSaleModal

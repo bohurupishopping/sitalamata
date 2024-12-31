@@ -13,6 +13,9 @@ export default function Stock() {
   const [salesData, setSalesData] = useState([])
   const [closingStock, setClosingStock] = useState([])
   const [categories, setCategories] = useState({})
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
+  const [searchQuery, setSearchQuery] = useState('')
   const [currentDate] = useState(new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -106,6 +109,17 @@ export default function Stock() {
     calculateClosingStock()
   }, [inventoryItems, salesData, categories])
 
+  // Pagination and filtering
+  const filteredStock = closingStock.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentStock = filteredStock.slice(indexOfFirstItem, indexOfLastItem)
+
+  const totalPages = Math.ceil(filteredStock.length / itemsPerPage)
+
   const exportToPDF = () => {
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -172,39 +186,52 @@ export default function Stock() {
       margin: { left: 15 }
     })
 
-    // Add footer
-    const pageCount = doc.internal.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i)
-      doc.setFontSize(10)
-      doc.text(
-        `Page ${i} of ${pageCount}`,
-        200,
-        290,
-        null,
-        null,
-        'right'
-      )
-    }
-
     // Save the PDF
     doc.save(`Stock_Report_${currentDate.replace(/ /g, '_')}.pdf`)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       <Sidebar />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 md:p-6">
         <StockHeader 
           currentDate={currentDate}
           onExport={exportToPDF}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
 
-        <StockStats closingStock={closingStock} />
-
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100">
-          <StockTable closingStock={closingStock} />
+        <div className="mt-4 bg-white rounded-lg shadow-sm">
+          <StockTable closingStock={currentStock} />
         </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredStock.length)} of {filteredStock.length} entries
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1 text-sm bg-gray-100 rounded-md">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        <StockStats closingStock={closingStock} />
       </div>
     </div>
   )
