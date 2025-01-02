@@ -34,16 +34,23 @@ export default function EditSaleModal({ sale, items, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Edit Sale</h2>
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item</label>
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 hover:scale-100">
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-t-xl p-6">
+          <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit Sale</span>
+          </h2>
+        </div>
+        <form onSubmit={handleUpdate} className="p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Item</label>
             <select
               value={editedSale.itemId}
               onChange={(e) => setEditedSale({ ...editedSale, itemId: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50 transition-all duration-200 hover:bg-gray-100"
               required
             >
               {items.map((item) => (
@@ -53,44 +60,47 @@ export default function EditSaleModal({ sale, items, onClose, onSuccess }) {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Quantity</label>
             <input
               type="number"
               value={editedSale.quantity}
               onChange={(e) => setEditedSale({ ...editedSale, quantity: parseInt(e.target.value) })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50 transition-all duration-200 hover:bg-gray-100"
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Date</label>
             <input
               type="date"
               value={editedSale.date}
               onChange={(e) => setEditedSale({ ...editedSale, date: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50 transition-all duration-200 hover:bg-gray-100"
               required
             />
           </div>
+
           <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={handleDelete}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200"
             >
               Delete
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200"
             >
               Save Changes
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
             >
               Cancel
             </button>

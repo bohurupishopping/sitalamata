@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { jsPDF } from "jspdf";
-import "jspdf-autotable";
 import Sidebar from "../components/Sidebar";
 import { useData } from "../hooks/useData";
 import { usePagination } from "../hooks/usePagination";
+import { generateStockPDF } from "../components/StockPDFExport";
 
 export default function StockOverview() {
   const { items, sales, purchases, loading } = useData();
@@ -26,65 +25,7 @@ export default function StockOverview() {
   };
 
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-
-    // Title
-    doc.setFontSize(18);
-    doc.text("Stock Overview Report", 14, 20);
-
-    // Table Data
-    const tableData = items.map((item) => {
-      const totalPurchaseQty = calculateTotalPurchaseQty(item.id);
-      const totalSales = sales
-        .filter((sale) => sale.itemId === item.id)
-        .reduce((sum, sale) => sum + sale.quantity, 0);
-      const closingStock = totalPurchaseQty - totalSales;
-
-      return [
-        item.name,
-        `${totalPurchaseQty} ${item.unit || ""}`,
-        `${totalSales} ${item.unit || ""}`,
-        `${closingStock} ${item.unit || ""}`,
-      ];
-    });
-
-    // Table Headers
-    const headers = [
-      ["Item", "Purchase Quantity", "Total Sales", "Closing Stock"],
-    ];
-
-    // AutoTable
-    doc.autoTable({
-      startY: 30,
-      head: headers,
-      body: tableData,
-      theme: "striped",
-      styles: {
-        fontSize: 10,
-        cellPadding: 2,
-        valign: "middle",
-        halign: "center",
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-      },
-      columnStyles: {
-        0: { halign: "left", cellWidth: 60 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 40 },
-        3: { cellWidth: 40 },
-      },
-    });
-
-    // Footer
-    const date = new Date().toLocaleDateString();
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${date}`, 14, doc.lastAutoTable.finalY + 10);
-
-    // Save PDF
-    doc.save("stock-overview-report.pdf");
+    generateStockPDF(items, sales, purchases);
   };
 
   if (loading) {
