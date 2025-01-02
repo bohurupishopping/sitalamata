@@ -1,24 +1,17 @@
 import React from 'react'
 
-export default function SalesHeader({ onAddClick, dateRange, setDateRange, searchQuery, setSearchQuery }) {
+export default function SalesHeader({ onAddClick, dateRange, setDateRange }) {
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
+    <div className="flex items-center justify-between mb-6">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Sales Tracking</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Sales Tracking</h1>
         <p className="text-sm text-gray-500">Monitor and manage your sales</p>
       </div>
-      <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto mt-4 md:mt-0">
-        <input
-          type="text"
-          placeholder="Search sales..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full md:w-48 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-        />
+      <div className="flex items-center space-x-4">
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          className="w-full md:w-48 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="week">This Week</option>
           <option value="month">This Month</option>
@@ -26,7 +19,7 @@ export default function SalesHeader({ onAddClick, dateRange, setDateRange, searc
         </select>
         <button
           onClick={onAddClick}
-          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

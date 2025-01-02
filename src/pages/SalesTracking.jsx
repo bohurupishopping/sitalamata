@@ -1,26 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { collection, addDoc, onSnapshot, query, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, onSnapshot, query } from 'firebase/firestore'
 import { db } from '../firebase'
 import Sidebar from '../components/Sidebar'
-import SalesHeader from '../components/sales/SalesHeader'
-import SalesStats from '../components/sales/SalesStats'
-import SalesChart from '../components/sales/SalesChart'
-import SalesTable from '../components/sales/SalesTable'
-import AddSaleModal from '../components/sales/AddSaleModal'
-import EditSaleModal from '../components/sales/EditSaleModal'
+import SalesTable from '../components/SalesTable'
+import AddSaleModal from '../components/AddSaleModal'
 
 export default function SalesTracking() {
   const [sales, setSales] = useState([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [editingSale, setEditingSale] = useState(null)
   const [inventoryItems, setInventoryItems] = useState([])
-  const [dateRange, setDateRange] = useState('week')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
-  const [searchQuery, setSearchQuery] = useState('')
 
-  // Fetch sales data
+  // Fetch all sales data
   useEffect(() => {
     const q = query(collection(db, 'sales'))
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -30,160 +20,71 @@ export default function SalesTracking() {
     return () => unsubscribe()
   }, [])
 
-  // Fetch inventory items
+  // Fetch inventory items for sale selection
   useEffect(() => {
     const fetchInventory = async () => {
-      const categoriesQuery = query(collection(db, 'categories'))
-      const categoriesSnapshot = await getDocs(categoriesQuery)
-      const allItems = []
+      try {
+        const categoriesQuery = query(collection(db, 'categories'))
+        const unsubscribeCategories = onSnapshot(categoriesQuery, (categoriesSnapshot) => {
+          const allItems = []
 
-      categoriesSnapshot.forEach(async (categoryDoc) => {
-        const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
-        const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
-          itemsSnapshot.forEach(itemDoc => {
-            allItems.push({
-              id: itemDoc.id,
-              category: categoryDoc.id,
-              ...itemDoc.data()
+          categoriesSnapshot.forEach(async (categoryDoc) => {
+            const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
+            const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
+              itemsSnapshot.forEach(itemDoc => {
+                allItems.push({
+                  id: itemDoc.id,
+                  category: categoryDoc.id,
+                  ...itemDoc.data()
+                })
+              })
+              setInventoryItems([...allItems])
             })
           })
-          setInventoryItems([...allItems])
         })
-      })
+
+        return () => unsubscribeCategories()
+      } catch (error) {
+        console.error('Error fetching inventory:', error)
+      }
     }
 
     fetchInventory()
   }, [])
 
-  // Pagination and filtering
-  const filteredSales = sales.filter(sale => 
-    sale.itemName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem)
-
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage)
-
+  // Handle adding a new sale
   const handleAddSale = async (sale) => {
     try {
-      await addDoc(collection(db, 'sales'), sale)
+      await addDoc(collection(db, 'sales'), {
+        ...sale,
+        saleDate: new Date().toISOString().split('T')[0]
+      })
+      setIsAddModalOpen(false)
     } catch (error) {
       console.error('Error adding sale:', error)
     }
   }
 
-  const handleEditSale = async (sale) => {
-    try {
-      await updateDoc(doc(db, 'sales', sale.id), sale)
-      setIsEditModalOpen(false)
-    } catch (error) {
-      console.error('Error updating sale:', error)
-    }
-  }
-
-  const handleDeleteSale = async (saleId) => {
-    try {
-      await deleteDoc(doc(db, 'sales', saleId))
-    } catch (error) {
-      console.error('Error deleting sale:', error)
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-100 flex">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-6">
-        <SalesHeader 
-          onAddClick={() => setIsAddModalOpen(true)}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-
-        <SalesStats sales={sales} dateRange={dateRange} />
-
-        {/* Sales Table moved here */}
-        <div className="mt-4 bg-white rounded-lg shadow-sm">
-          <SalesTable 
-            sales={currentSales} 
-            onEdit={(sale) => {
-              setEditingSale(sale)
-              setIsEditModalOpen(true)
-            }}
-            onDelete={handleDeleteSale}
-          />
+      <div className="flex-1 p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Sales Tracking</h1>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Add New Sale
+          </button>
         </div>
 
-        {/* Pagination */}
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredSales.length)} of {filteredSales.length} entries
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-3 py-1 text-sm bg-gray-100 rounded-md">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <SalesChart sales={sales} dateRange={dateRange} />
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-lg font-semibold mb-4">Top Selling Items</h2>
-            <div className="space-y-2">
-              {sales
-                .reduce((acc, sale) => {
-                  const existing = acc.find(item => item.name === sale.itemName)
-                  if (existing) {
-                    existing.quantity += sale.quantitySold
-                  } else {
-                    acc.push({ name: sale.itemName, quantity: sale.quantitySold })
-                  }
-                  return acc
-                }, [])
-                .sort((a, b) => b.quantity - a.quantity)
-                .slice(0, 5)
-                .map((item, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
-                    <span className="text-sm">{item.name}</span>
-                    <span className="text-sm font-medium">{item.quantity} sold</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
+        <SalesTable sales={sales} />
 
         <AddSaleModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddSale}
-          inventoryItems={inventoryItems}
-        />
-
-        <EditSaleModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSubmit={handleEditSale}
-          sale={editingSale}
           inventoryItems={inventoryItems}
         />
       </div>

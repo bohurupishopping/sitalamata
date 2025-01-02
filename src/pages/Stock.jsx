@@ -1,26 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { collection, onSnapshot, query, getDocs } from 'firebase/firestore'
+import { collection, onSnapshot, query } from 'firebase/firestore'
 import { db } from '../firebase'
 import Sidebar from '../components/Sidebar'
-import StockHeader from '../components/stock/StockHeader'
-import StockStats from '../components/stock/StockStats'
-import StockTable from '../components/stock/StockTable'
-import jsPDF from 'jspdf'
-import 'jspdf-autotable'
 
 export default function Stock() {
   const [inventoryItems, setInventoryItems] = useState([])
   const [salesData, setSalesData] = useState([])
   const [closingStock, setClosingStock] = useState([])
   const [categories, setCategories] = useState({})
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentDate] = useState(new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }))
 
   // Fetch all categories
   useEffect(() => {
@@ -38,23 +25,30 @@ export default function Stock() {
   // Fetch inventory items from all categories
   useEffect(() => {
     const fetchInventory = async () => {
-      const categoriesQuery = query(collection(db, 'categories'))
-      const categoriesSnapshot = await getDocs(categoriesQuery)
-      const allItems = []
+      try {
+        const categoriesQuery = query(collection(db, 'categories'))
+        const unsubscribeCategories = onSnapshot(categoriesQuery, (categoriesSnapshot) => {
+          const allItems = []
 
-      categoriesSnapshot.forEach(async (categoryDoc) => {
-        const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
-        const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
-          itemsSnapshot.forEach(itemDoc => {
-            allItems.push({
-              id: itemDoc.id,
-              categoryId: categoryDoc.id,
-              ...itemDoc.data()
+          categoriesSnapshot.forEach(async (categoryDoc) => {
+            const itemsQuery = query(collection(db, `categories/${categoryDoc.id}/items`))
+            const unsubscribeItems = onSnapshot(itemsQuery, (itemsSnapshot) => {
+              itemsSnapshot.forEach(itemDoc => {
+                allItems.push({
+                  id: itemDoc.id,
+                  categoryId: categoryDoc.id,
+                  ...itemDoc.data()
+                })
+              })
+              setInventoryItems([...allItems])
             })
           })
-          setInventoryItems([...allItems])
         })
-      })
+
+        return () => unsubscribeCategories()
+      } catch (error) {
+        console.error('Error fetching inventory:', error)
+      }
     }
 
     fetchInventory()
@@ -109,129 +103,38 @@ export default function Stock() {
     calculateClosingStock()
   }, [inventoryItems, salesData, categories])
 
-  // Pagination and filtering
-  const filteredStock = closingStock.filter(item => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentStock = filteredStock.slice(indexOfFirstItem, indexOfLastItem)
-
-  const totalPages = Math.ceil(filteredStock.length / itemsPerPage)
-
-  const exportToPDF = () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    })
-
-    // Add title
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Stock Overview Report', 15, 20)
-
-    // Add subtitle
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Generated on: ${currentDate}`, 15, 28)
-
-    // Add summary section
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Summary', 15, 40)
-    
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Total Items: ${closingStock.length}`, 15, 48)
-    doc.text(`Total Quantity: ${closingStock.reduce((sum, item) => sum + item.quantity, 0)}`, 15, 56)
-    doc.text(`Low Stock Items: ${closingStock.filter(item => item.quantity > 0 && item.quantity < 10).length}`, 15, 64)
-    doc.text(`Out of Stock Items: ${closingStock.filter(item => item.quantity <= 0).length}`, 15, 72)
-
-    // Add table
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Stock Details', 15, 84)
-
-    const tableData = closingStock.map(item => [
-      item.category,
-      item.name,
-      item.quantity,
-      item.quantity <= 0 ? 'Out of Stock' : 
-      item.quantity < 10 ? 'Low Stock' : 'In Stock'
-    ])
-
-    doc.autoTable({
-      startY: 90,
-      head: [['Category', 'Item Name', 'Quantity', 'Status']],
-      body: tableData,
-      theme: 'striped',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3,
-        overflow: 'linebreak'
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 40 }
-      },
-      margin: { left: 15 }
-    })
-
-    // Save the PDF
-    doc.save(`Stock_Report_${currentDate.replace(/ /g, '_')}.pdf`)
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-100 flex">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-6">
-        <StockHeader 
-          currentDate={currentDate}
-          onExport={exportToPDF}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-
-        <div className="mt-4 bg-white rounded-lg shadow-sm">
-          <StockTable closingStock={currentStock} />
+      <div className="flex-1 p-8">
+        <h1 className="text-2xl font-bold mb-6">Stock Overview</h1>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold mb-4">Closing Stock</h2>
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 text-left">Category</th>
+                <th className="p-2 text-left">Item Name</th>
+                <th className="p-2 text-left">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {closingStock.length > 0 ? (
+                closingStock.map((item, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="p-2">{item.category}</td>
+                    <td className="p-2">{item.name}</td>
+                    <td className="p-2">{item.quantity}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="p-2 text-center">No stock data available</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {/* Pagination */}
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredStock.length)} of {filteredStock.length} entries
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-3 py-1 text-sm bg-gray-100 rounded-md">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm bg-white border rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
-        <StockStats closingStock={closingStock} />
       </div>
     </div>
   )
